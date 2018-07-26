@@ -42,11 +42,15 @@ namespace Saraff.Twain.Aux {
 
     public sealed class TwainExternalProcess {
 
-        public static void Execute(string fileName,Action<Twain32> execCallback) {
-            using(var _proc=TwainExternalProcess.AuxProcess.CreateProcess(fileName)) {
+        public static void Execute(string fileName, Action<Twain32> execCallback) {
+            TwainExternalProcess.Execute(fileName, (twain, host) => execCallback(twain));
+        }
+
+        public static void Execute(string fileName, Action<Twain32, IDisposable> execCallback) {
+            using(var _proc = TwainExternalProcess.AuxProcess.CreateProcess(fileName)) {
                 _proc.Begin();
 
-                execCallback(new Twain32RealProxy(_proc).GetTransparentProxy() as Twain32);
+                execCallback(new Twain32RealProxy(_proc).GetTransparentProxy() as Twain32, _proc);
 
                 _proc.End();
             }
