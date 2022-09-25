@@ -45,26 +45,26 @@ namespace Saraff.Twain.Aux {
     internal static class ImpersonationUtils {
 
         public static Process RunAsCurrentUser(string fileName) {
-            var _token=ImpersonationUtils._GetPrimaryToken();
+            var _token = ImpersonationUtils._GetPrimaryToken();
             try {
-                for(var _env=IntPtr.Zero; Win32.CreateEnvironmentBlock(ref _env,_token,false)&&_env!=IntPtr.Zero; ) {
+                for(var _env = IntPtr.Zero; Win32.CreateEnvironmentBlock(ref _env, _token, false) && _env != IntPtr.Zero;) {
                     try {
-                        IntPtr _hStdIn,_hStdOut,_hStdError;
-                        var _result=ImpersonationUtils._LaunchProcessAsUser(fileName,_token,_env,out _hStdIn,out _hStdOut,out _hStdError);
+                        IntPtr _hStdIn, _hStdOut, _hStdError;
+                        var _result = ImpersonationUtils._LaunchProcessAsUser(fileName, _token, _env, out _hStdIn, out _hStdOut, out _hStdError);
 
-                        var _type=typeof(Process);
-                        for(var _field=_type.GetField("standardInput",BindingFlags.Instance|BindingFlags.NonPublic); _field!=null&&_hStdIn!=IntPtr.Zero&&_hStdIn!=new IntPtr(-1); ) {
-                            _field.SetValue(_result,new StreamWriter(new FileStream(new SafeFileHandle(_hStdIn,true),FileAccess.Write),Encoding.GetEncoding(866)) {
-                                AutoFlush=true
+                        var _type = typeof(Process);
+                        for(var _field = _type.GetField("standardInput", BindingFlags.Instance | BindingFlags.NonPublic); _field != null && _hStdIn != IntPtr.Zero && _hStdIn != new IntPtr(-1);) {
+                            _field.SetValue(_result, new StreamWriter(new FileStream(new SafeFileHandle(_hStdIn, true), FileAccess.Write), Encoding.GetEncoding(866)) {
+                                AutoFlush = true
                             });
                             break;
                         }
-                        for(var _field=_type.GetField("standardOutput",BindingFlags.Instance|BindingFlags.NonPublic); _field!=null&&_hStdOut!=IntPtr.Zero&&_hStdOut!=new IntPtr(-1); ) {
-                            _field.SetValue(_result,new StreamReader(new FileStream(new SafeFileHandle(_hStdOut,true),FileAccess.Read),Encoding.GetEncoding(866),true));
+                        for(var _field = _type.GetField("standardOutput", BindingFlags.Instance | BindingFlags.NonPublic); _field != null && _hStdOut != IntPtr.Zero && _hStdOut != new IntPtr(-1);) {
+                            _field.SetValue(_result, new StreamReader(new FileStream(new SafeFileHandle(_hStdOut, true), FileAccess.Read), Encoding.GetEncoding(866), true));
                             break;
                         }
-                        for(var _field=_type.GetField("standardError",BindingFlags.Instance|BindingFlags.NonPublic); _field!=null&&_hStdError!=IntPtr.Zero&&_hStdError!=new IntPtr(-1); ) {
-                            _field.SetValue(_result,new StreamReader(new FileStream(new SafeFileHandle(_hStdError,true),FileAccess.Read),Encoding.GetEncoding(866),true));
+                        for(var _field = _type.GetField("standardError", BindingFlags.Instance | BindingFlags.NonPublic); _field != null && _hStdError != IntPtr.Zero && _hStdError != new IntPtr(-1);) {
+                            _field.SetValue(_result, new StreamReader(new FileStream(new SafeFileHandle(_hStdError, true), FileAccess.Read), Encoding.GetEncoding(866), true));
                             break;
                         }
                         return _result;
@@ -72,49 +72,49 @@ namespace Saraff.Twain.Aux {
                         Win32.DestroyEnvironmentBlock(_env);
                     }
                 }
-                throw new Win32Exception(Marshal.GetLastWin32Error(),"CreateEnvironmentBlock failed.");
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "CreateEnvironmentBlock failed.");
             } finally {
                 Win32.CloseHandle(_token);
             }
         }
 
-        public static IDisposable ImpersonateCurrentUser() {
-            return new WindowsIdentity(ImpersonationUtils._GetPrimaryToken()).Impersonate();
-        }
+        //public static IDisposable ImpersonateCurrentUser() {
+        //    return new WindowsIdentity(ImpersonationUtils._GetPrimaryToken()).Impersonate();
+        //}
 
-        private static Process _LaunchProcessAsUser(string fileName,IntPtr token,IntPtr envBlock,out IntPtr hStdIn,out IntPtr hStdOut,out IntPtr hStdError) {
-            var _saProcess=new _SecurityAttributes {
-                nLength=Marshal.SizeOf(typeof(_SecurityAttributes))
+        private static Process _LaunchProcessAsUser(string fileName, IntPtr token, IntPtr envBlock, out IntPtr hStdIn, out IntPtr hStdOut, out IntPtr hStdError) {
+            var _saProcess = new _SecurityAttributes {
+                nLength = Marshal.SizeOf(typeof(_SecurityAttributes))
             };
-            var _saThread=new _SecurityAttributes {
-                nLength=Marshal.SizeOf(typeof(_SecurityAttributes))
+            var _saThread = new _SecurityAttributes {
+                nLength = Marshal.SizeOf(typeof(_SecurityAttributes))
             };
-            var _pi=new _ProcessInformation();
+            var _pi = new _ProcessInformation();
 
-            var _si=new _StartupInfo {
-                cb=Marshal.SizeOf(typeof(_StartupInfo)),
-                lpDesktop=@"WinSta0\Default",
-                wShowWindow=SW.Hide,
-                dwFlags=StartFlags.UseShowWindow|StartFlags.UseStdHandles
+            var _si = new _StartupInfo {
+                cb = Marshal.SizeOf(typeof(_StartupInfo)),
+                lpDesktop = @"WinSta0\Default",
+                wShowWindow = SW.Hide,
+                dwFlags = StartFlags.UseShowWindow | StartFlags.UseStdHandles
             };
 
-            ImpersonationUtils._CreatePipe(out _si.hStdInput,out hStdIn);
-            if(!Win32.SetHandleInformation(_si.hStdInput,HandleFlags.Inherit,HandleFlags.Inherit)) {
-                throw new Win32Exception(Marshal.GetLastWin32Error(),"SetHandleInformation failed.");
+            ImpersonationUtils._CreatePipe(out _si.hStdInput, out hStdIn);
+            if(!Win32.SetHandleInformation(_si.hStdInput, HandleFlags.Inherit, HandleFlags.Inherit)) {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "SetHandleInformation failed.");
             }
 
-            ImpersonationUtils._CreatePipe(out hStdOut,out _si.hStdOutput);
-            if(!Win32.SetHandleInformation(_si.hStdOutput,HandleFlags.Inherit,HandleFlags.Inherit)) {
-                throw new Win32Exception(Marshal.GetLastWin32Error(),"SetHandleInformation failed.");
+            ImpersonationUtils._CreatePipe(out hStdOut, out _si.hStdOutput);
+            if(!Win32.SetHandleInformation(_si.hStdOutput, HandleFlags.Inherit, HandleFlags.Inherit)) {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "SetHandleInformation failed.");
             }
 
-            ImpersonationUtils._CreatePipe(out hStdError,out _si.hStdError);
-            if(!Win32.SetHandleInformation(_si.hStdError,HandleFlags.Inherit,HandleFlags.Inherit)) {
-                throw new Win32Exception(Marshal.GetLastWin32Error(),"SetHandleInformation failed.");
+            ImpersonationUtils._CreatePipe(out hStdError, out _si.hStdError);
+            if(!Win32.SetHandleInformation(_si.hStdError, HandleFlags.Inherit, HandleFlags.Inherit)) {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "SetHandleInformation failed.");
             }
 
-            if(!Win32.CreateProcessAsUser(token,null,fileName,_saProcess,_saThread,true,ProcessCreationFlags.CreateUnicodeEnvironment,envBlock,null,_si,_pi)) {
-                throw new Win32Exception(Marshal.GetLastWin32Error(),"CreateProcessAsUser failed.");
+            if(!Win32.CreateProcessAsUser(token, null, fileName, _saProcess, _saThread, true, ProcessCreationFlags.CreateUnicodeEnvironment, envBlock, null, _si, _pi)) {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "CreateProcessAsUser failed.");
             }
             Win32.CloseHandle(_pi.hProcess);
             Win32.CloseHandle(_pi.hThread);
@@ -125,36 +125,36 @@ namespace Saraff.Twain.Aux {
         }
 
         private static IntPtr _GetPrimaryToken() {
-            for(var _process=Process.GetProcessesByName("explorer").FirstOrDefault(); _process!=null; ) {
-                var _token=IntPtr.Zero;
-                if(Win32.OpenProcessToken(_process.Handle,TokenAccessLevels.Duplicate,ref _token)) {
+            for(var _process = Process.GetProcessesByName("explorer").FirstOrDefault(); _process != null;) {
+                var _token = IntPtr.Zero;
+                if(Win32.OpenProcessToken(_process.Handle, TokenAccessLevels.Duplicate, ref _token)) {
                     try {
-                        var _sa=new _SecurityAttributes {
-                            nLength=Marshal.SizeOf(typeof(_SecurityAttributes))
+                        var _sa = new _SecurityAttributes {
+                            nLength = Marshal.SizeOf(typeof(_SecurityAttributes))
                         };
 
-                        var _primaryToken=IntPtr.Zero;
-                        if(!Win32.DuplicateTokenEx(_token,TokenAccessLevels.AllAccess,_sa,TokenImpersonationLevel.Impersonation,TokenType.Primary,ref _primaryToken)) {
-                            throw new Win32Exception(Marshal.GetLastWin32Error(),"DuplicateTokenEx failed.");
+                        var _primaryToken = IntPtr.Zero;
+                        if(!Win32.DuplicateTokenEx(_token, TokenAccessLevels.AllAccess, _sa, TokenImpersonationLevel.Impersonation, TokenType.Primary, ref _primaryToken)) {
+                            throw new Win32Exception(Marshal.GetLastWin32Error(), "DuplicateTokenEx failed.");
                         }
                         return _primaryToken;
                     } finally {
                         Win32.CloseHandle(_token);
                     }
                 } else {
-                    throw new Win32Exception(Marshal.GetLastWin32Error(),"OpenProcessToken failed.");
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), "OpenProcessToken failed.");
                 }
             }
             throw new InvalidOperationException("Could not find explorer.exe.");
         }
 
-        private static void _CreatePipe(out IntPtr hReadPipe,out IntPtr hWritePipe) {
-            var _saPipe=new _SecurityAttributes {
-                nLength=Marshal.SizeOf(typeof(_SecurityAttributes)),
-                bInheritHandle=true
+        private static void _CreatePipe(out IntPtr hReadPipe, out IntPtr hWritePipe) {
+            var _saPipe = new _SecurityAttributes {
+                nLength = Marshal.SizeOf(typeof(_SecurityAttributes)),
+                bInheritHandle = true
             };
-            if(!Win32.CreatePipe(out hReadPipe,out hWritePipe,_saPipe,0)) {
-                throw new Win32Exception(Marshal.GetLastWin32Error(),"CreatePipe failed.");
+            if(!Win32.CreatePipe(out hReadPipe, out hWritePipe, _saPipe, 0)) {
+                throw new Win32Exception(Marshal.GetLastWin32Error(), "CreatePipe failed.");
             }
         }
 
@@ -167,7 +167,7 @@ namespace Saraff.Twain.Aux {
             public bool bInheritHandle;
         }
 
-        [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         private class _StartupInfo {
             public int cb;
 
@@ -210,109 +210,109 @@ namespace Saraff.Twain.Aux {
         }
 
         private enum TokenType {
-            Primary=1,
-            Impersonation=2
+            Primary = 1,
+            Impersonation = 2
         }
 
         [Flags]
-        private enum StartFlags:uint {
-            ForceOnFeedback=0x00000040,
-            ForceOffFeedback=0x00000080,
-            PreventPinning=0x00002000,
-            RunFullSCREEN=0x00000020,
-            TitleIsAppId=0x00001000,
-            TitleIsLinkName=0x00000800,
-            UntrustedSource=0x00008000,
-            UseCountChars=0x00000008,
-            UseFillAttribute=0x00000010,
-            UseHotKey=0x00000200,
-            UsePosition=0x00000004,
-            UseShowWindow=0x00000001,
-            UseSize=0x00000002,
-            UseStdHandles=0x00000100
+        private enum StartFlags : uint {
+            ForceOnFeedback = 0x00000040,
+            ForceOffFeedback = 0x00000080,
+            PreventPinning = 0x00002000,
+            RunFullSCREEN = 0x00000020,
+            TitleIsAppId = 0x00001000,
+            TitleIsLinkName = 0x00000800,
+            UntrustedSource = 0x00008000,
+            UseCountChars = 0x00000008,
+            UseFillAttribute = 0x00000010,
+            UseHotKey = 0x00000200,
+            UsePosition = 0x00000004,
+            UseShowWindow = 0x00000001,
+            UseSize = 0x00000002,
+            UseStdHandles = 0x00000100
         }
 
-        private enum SW:ushort {
-            ForceMinimize=11,
-            Hide=0,
-            Maximize=3,
-            Minimize=6,
-            Restore=9,
-            Show=5,
-            ShowDefault=10,
-            ShowMaximized=3,
-            ShowMinimized=2,
-            ShowMinNoActive=7,
-            ShowNA=8,
-            ShowNoActivate=4,
-            ShowNormal=1
+        private enum SW : ushort {
+            ForceMinimize = 11,
+            Hide = 0,
+            Maximize = 3,
+            Minimize = 6,
+            Restore = 9,
+            Show = 5,
+            ShowDefault = 10,
+            ShowMaximized = 3,
+            ShowMinimized = 2,
+            ShowMinNoActive = 7,
+            ShowNA = 8,
+            ShowNoActivate = 4,
+            ShowNormal = 1
         }
 
         [Flags]
         private enum ProcessCreationFlags {
-            CreateBreakawayFromJob=0x01000000,
-            CreateDefaultErrorMode=0x04000000,
-            CreateNewConsole=0x00000010,
-            CreateNewProcess_Group=0x00000200,
-            CreateNoWindow=0x08000000,
-            CreateProtectedProcess=0x00040000,
-            CreatePreserveCodeAuthzLevel=0x02000000,
-            CreateSeparateWowVdm=0x00000800,
-            CreateSharedWowVdm=0x00001000,
-            CreateSuspended=0x00000004,
-            CreateUnicodeEnvironment=0x00000400,
-            DebugOnlyThisProcess=0x00000002,
-            DebugProcess=0x00000001,
-            DetachedProcess=0x00000008,
-            ExtendedStartupInfoPresent=0x00080000,
-            InheritParentAffinity=0x00010000
+            CreateBreakawayFromJob = 0x01000000,
+            CreateDefaultErrorMode = 0x04000000,
+            CreateNewConsole = 0x00000010,
+            CreateNewProcess_Group = 0x00000200,
+            CreateNoWindow = 0x08000000,
+            CreateProtectedProcess = 0x00040000,
+            CreatePreserveCodeAuthzLevel = 0x02000000,
+            CreateSeparateWowVdm = 0x00000800,
+            CreateSharedWowVdm = 0x00001000,
+            CreateSuspended = 0x00000004,
+            CreateUnicodeEnvironment = 0x00000400,
+            DebugOnlyThisProcess = 0x00000002,
+            DebugProcess = 0x00000001,
+            DetachedProcess = 0x00000008,
+            ExtendedStartupInfoPresent = 0x00080000,
+            InheritParentAffinity = 0x00010000
         }
 
         [Flags]
-        enum HandleFlags:uint {
-            None=0,
-            Inherit=1,
-            ProtectFromClose=2
+        enum HandleFlags : uint {
+            None = 0,
+            Inherit = 1,
+            ProtectFromClose = 2
         }
 
         #endregion
 
         private sealed class Win32 {
 
-            [DllImport("advapi32.dll",SetLastError=true)]
+            [DllImport("advapi32.dll", SetLastError = true)]
             internal static extern bool CreateProcessAsUser(
                 IntPtr hToken,
                 string lpApplicationName,
                 string lpCommandLine,
-                [In,Out] _SecurityAttributes lpProcessAttributes,
-                [In,Out] _SecurityAttributes lpThreadAttributes,
+                [In, Out] _SecurityAttributes lpProcessAttributes,
+                [In, Out] _SecurityAttributes lpThreadAttributes,
                 bool bInheritHandles,
                 ProcessCreationFlags dwCreationFlags,
                 IntPtr lpEnvironment,
                 string lpCurrentDirectory,
-                [In,Out] _StartupInfo lpStartupInfo,
+                [In, Out] _StartupInfo lpStartupInfo,
                 [Out] _ProcessInformation lpProcessInformation);
 
-            [DllImport("advapi32.dll",SetLastError=true)]
-            internal static extern bool DuplicateTokenEx(IntPtr hExistingToken,TokenAccessLevels dwDesiredAccess,[In,Out] _SecurityAttributes lpThreadAttributes,TokenImpersonationLevel ImpersonationLevel,TokenType dwTokenType,ref IntPtr phNewToken);
+            [DllImport("advapi32.dll", SetLastError = true)]
+            internal static extern bool DuplicateTokenEx(IntPtr hExistingToken, TokenAccessLevels dwDesiredAccess, [In, Out] _SecurityAttributes lpThreadAttributes, TokenImpersonationLevel ImpersonationLevel, TokenType dwTokenType, ref IntPtr phNewToken);
 
-            [DllImport("advapi32.dll",SetLastError=true)]
-            internal static extern bool OpenProcessToken(IntPtr hProcess,TokenAccessLevels dwDesiredAccess,ref IntPtr hToken);
+            [DllImport("advapi32.dll", SetLastError = true)]
+            internal static extern bool OpenProcessToken(IntPtr hProcess, TokenAccessLevels dwDesiredAccess, ref IntPtr hToken);
 
-            [DllImport("userenv.dll",SetLastError=true)]
-            internal static extern bool CreateEnvironmentBlock(ref IntPtr lpEnvironment,IntPtr hToken,bool bInherit);
+            [DllImport("userenv.dll", SetLastError = true)]
+            internal static extern bool CreateEnvironmentBlock(ref IntPtr lpEnvironment, IntPtr hToken, bool bInherit);
 
-            [DllImport("userenv.dll",SetLastError=true)]
+            [DllImport("userenv.dll", SetLastError = true)]
             internal static extern bool DestroyEnvironmentBlock(IntPtr lpEnvironment);
 
-            [DllImport("kernel32.dll",SetLastError=true)]
+            [DllImport("kernel32.dll", SetLastError = true)]
             internal static extern bool CloseHandle(IntPtr handle);
 
             [DllImport("kernel32.dll")]
-            internal static extern bool CreatePipe(out IntPtr hReadPipe,out IntPtr hWritePipe,[In,Out] _SecurityAttributes lpPipeAttributes,uint nSize);
+            internal static extern bool CreatePipe(out IntPtr hReadPipe, out IntPtr hWritePipe, [In, Out] _SecurityAttributes lpPipeAttributes, uint nSize);
 
-            [DllImport("kernel32.dll",SetLastError=true)]
-            internal static extern bool SetHandleInformation(IntPtr handle,HandleFlags dwMask,HandleFlags dwFlags);
+            [DllImport("kernel32.dll", SetLastError = true)]
+            internal static extern bool SetHandleInformation(IntPtr handle, HandleFlags dwMask, HandleFlags dwFlags);
         }
     }
 }

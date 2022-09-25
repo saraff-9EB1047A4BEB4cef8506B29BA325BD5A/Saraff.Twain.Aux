@@ -28,49 +28,47 @@
  * 
  * PLEASE SEND EMAIL TO:  twain@saraff.ru.
  */
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-#if !NETCOREAPP
-using System.Runtime.Remoting.Proxies;
-using System.Runtime.Remoting.Messaging;
-#endif
-using System.Security.Permissions;
 using System.Reflection;
 
 namespace Saraff.Twain.Aux {
 
-#if !NETCOREAPP
-    internal sealed class TwainPaletteRealProxy:RealProxy {
-        private TwainExternalProcess.AuxProcess _aux;
+#if NETCOREAPP
 
-        internal TwainPaletteRealProxy(TwainExternalProcess.AuxProcess aux):base(typeof(Twain32.TwainPalette)) {
-            this._aux=aux;
-        }
-
-        [SecurityPermissionAttribute(SecurityAction.LinkDemand,Flags=SecurityPermissionFlag.Infrastructure)]
-        public override IMessage Invoke(IMessage msg) {
-            var _msg=msg as IMethodCallMessage;
-            try {
-                var _args=_msg.Args;
-
-                TwainCommand _command;
-                var _result=this._aux.Execute(_command=new MethodTwainCommand {Member=_msg.MethodBase,Parameters=_args});
-                for(Exception _ex=_result as Exception,_ex2=_result as TargetInvocationException; _ex!=null; ) {
-                    return new ReturnMessage(_ex2!=null?_ex2.InnerException:_ex,_msg);
-                }
-                return new ReturnMessage(_result,_args,0,_msg.LogicalCallContext,_msg);
-            } catch(Exception ex) {
-                return new ReturnMessage(ex,_msg);
-            }
-        }
-    }
-#else
-    internal class TwainPaletteRealProxy : DispatchProxy {
+    internal class TwainCapabilitiesRealProxy : DispatchProxy {
+        private readonly Dictionary<MemberInfo, object> _members = new Dictionary<MemberInfo, object>();
 
         protected override object Invoke(MethodInfo targetMethod, object[] args) {
-            var _result = this.Aux.Execute(new MethodTwainCommand { Member = targetMethod, Parameters = args });
+            if(!this._members.ContainsKey(targetMethod)) {
+                var _type = typeof(TwainCapabilityRealProxy<>).MakeGenericType(targetMethod.ReturnType);
+                var _inst = Activator.CreateInstance(_type);
+                _type.GetProperty(nameof(TwainCapabilityRealProxy<object>.Aux)).SetValue(_inst, this.Aux);
+                _type.GetProperty(nameof(TwainCapabilityRealProxy<object>.Member)).SetValue(_inst, targetMethod);
+
+                this._members.Add(targetMethod, _type.GetMethod(nameof(TwainCapabilityRealProxy<object>.GetTransparentProxy), BindingFlags.Instance | BindingFlags.NonPublic).Invoke(_inst, null));
+            }
+            return this._members[targetMethod];
+        }
+
+        internal ITwain32.ITwainCapabilities GetTransparentProxy() {
+            var _capabilities = DispatchProxy.Create<ITwain32.ITwainCapabilities, TwainCapabilitiesRealProxy>();
+            if(_capabilities as object is TwainCapabilitiesRealProxy _proxy) {
+                _proxy.Aux = this.Aux;
+            }
+            return _capabilities;
+        }
+
+        public TwainExternalProcess.AuxProcess Aux { get; set; }
+    }
+
+    internal class TwainCapabilityRealProxy<T> : DispatchProxy {
+
+        protected override object Invoke(MethodInfo targetMethod, object[] args) {
+            var _result = this.Aux.Execute(new MethodTwainCommand {
+                Member = targetMethod,
+                Parameters = new IEnumerable<object>[] {
+                    new object[] { this.Member.Name },
+                    args }.SelectMany(x => x).ToArray()
+            });
             if(_result is Exception _ex) {
                 if(_ex is TargetInvocationException && _ex.InnerException is TwainException _ex2) {
                     throw _ex2;
@@ -80,15 +78,20 @@ namespace Saraff.Twain.Aux {
             return _result;
         }
 
-        internal ITwain32.ITwainPalette GetTransparentProxy() {
-            var _pallete = DispatchProxy.Create<ITwain32.ITwainPalette, TwainPaletteRealProxy>();
-            if(_pallete as object is TwainPaletteRealProxy _proxy) {
+        internal T GetTransparentProxy() {
+            var _capability = DispatchProxy.Create<T, TwainCapabilityRealProxy<T>>();
+            if(_capability as object is TwainCapabilityRealProxy<T> _proxy) {
                 _proxy.Aux = this.Aux;
+                _proxy.Member = this.Member;
             }
-            return _pallete;
+            return _capability;
         }
 
         public TwainExternalProcess.AuxProcess Aux { get; set; }
+
+        public MemberInfo Member { get; set; }
     }
+
 #endif
+
 }

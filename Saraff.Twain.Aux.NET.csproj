@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Saraff.Twain.Aux</AssemblyName>
+    <RootNamespace>Saraff.Twain.Aux</RootNamespace>
+    <Authors>SARAFF</Authors>
+    <Company>SARAFF SOFTWARE</Company>
+    <Copyright>Copyright © SARAFF 2011</Copyright>
+    <PackageProjectUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.Aux</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/saraff-9EB1047A4BEB4cef8506B29BA325BD5A/Saraff.Twain.Aux</RepositoryUrl>
+    <PackageLicenseExpression>LGPL-3.0-or-later</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <AssemblyVersion>1.0.4.742</AssemblyVersion>
+    <FileVersion>1.0.4.742</FileVersion>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Version>1.0.4.742</Version>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile>E:\build\GitHub\Saraff.IoC\Saraff.IoCX\sign.snk</AssemblyOriginatorKeyFile>
+    <Description>Provides outproc interaction with a Saraff.Twain.NET.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Saraff.Twain" Version="1.0.32.732" />
+    <PackageReference Include="System.Reflection.DispatchProxy" Version="4.7.1" />
+  </ItemGroup>
+
+</Project>

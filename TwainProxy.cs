@@ -39,10 +39,10 @@ namespace Saraff.Twain.Aux {
 
     internal sealed class TwainProxy {
 
-        public static IEnumerable<byte[]> Execute(Twain32 twain32,IEnumerable<byte[]> commands) {
-            var _proxy=new TwainProxy {Twain32=twain32};
+        public static IEnumerable<byte[]> Execute(Twain32 twain32, IEnumerable<byte[]> commands) {
+            var _proxy = new TwainProxy { Twain32 = twain32 };
             foreach(var _data in commands) {
-                for(var _command=TwainCommand.FromArray(_data); _command!=null; ) {
+                for(var _command = TwainCommand.FromArray(_data); _command != null;) {
                     _proxy._ExecuteCore(_command);
                     yield return _command.ToArray();
                     break;
@@ -51,32 +51,41 @@ namespace Saraff.Twain.Aux {
             yield break;
         }
 
-        public static byte[] Execute(Twain32 twain32,byte[] command) {
-            var _command=TwainCommand.FromArray(command);
-            new TwainProxy {Twain32=twain32}._ExecuteCore(_command);
+        public static byte[] Execute(Twain32 twain32, byte[] command) {
+            var _command = TwainCommand.FromArray(command);
+            new TwainProxy { Twain32 = twain32 }._ExecuteCore(_command);
             return _command.ToArray();
         }
 
         private void _ExecuteCore(TwainCommand command) {
             try {
-                for(var _method=command as MethodTwainCommand; _method!=null; ) {
-                    command.Result=((MethodInfo)_method.Member).Invoke(this[_method.Member.DeclaringType],_method.Parameters);
-                    return;
+                for(var _method = command as MethodTwainCommand; _method != null;) {
+                    var _inst = this[_method.Member.DeclaringType];
+                    var _args = _method.Parameters;
+                    if(_inst is TwainCapabilities) {
+                        _inst = (typeof(TwainCapabilities).GetMember(_args[0] as string).SingleOrDefault() as MethodInfo).Invoke(_inst, null);
+                        _args = _args.Skip(1).ToArray();
+                    }
+                    command.Result = ((MethodInfo)_method.Member).Invoke(_inst, _args);
+                    break;
                 }
             } catch(Exception ex) {
-                command.Result=ex;
+                command.Result = ex;
             }
         }
 
-        public Twain32 Twain32 {
-            get;
-            set;
-        }
+        public Twain32 Twain32 { get; set; }
 
         private object this[Type type] {
             get {
-                if(type==typeof(Twain32.TwainPalette)) {
+                if(type == typeof(Twain32.TwainPalette)) {
                     return this.Twain32.Palette;
+                }
+                if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ICapability<>)) {
+                    return this.Twain32.Capabilities;
+                }
+                if(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ICapability2<>)) {
+                    return this.Twain32.Capabilities;
                 }
                 return this.Twain32;
             }
